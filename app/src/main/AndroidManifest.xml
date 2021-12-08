@@ -10,7 +10,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".ActivityResultAPIActivity"></activity>
+        <activity android:name=".ActivityResultAPIActivity" />
         <activity android:name=".OnActivityResultActivity" />
         <activity
             android:name=".MainActivity"
@@ -22,6 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity activity:name="me.bytebeats.pluginify.util.StubActivity"/>
     </application>
 
 </manifest>
