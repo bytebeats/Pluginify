@@ -7,10 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.AssetManager
 import android.content.res.Resources
-import android.os.Bundle
-import android.os.Environment
-import android.os.IBinder
-import android.os.UserHandle
+import android.os.*
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import java.io.File
 
@@ -136,22 +134,32 @@ internal class InstrumentationProxy(val mBase: Instrumentation) : Instrumentatio
         }
     }
 
-    override fun callActivityOnCreate(activity: Activity?, icicle: Bundle?) {
-        if (!isActivityFromPlugin(activity)) {
-            mBase.callActivityOnCreate(activity, icicle)
-            return
-        }
-        val pluginRes = PluginResources(activity?.resources)
-        try {
-            activity?.apply {
-                val mPackageInfo = baseContext::class.java.getDeclaredField("mPackageInfo")
-                mPackageInfo.isAccessible = true
-                val mClassLoader = mPackageInfo::class.java.getDeclaredField("mClassLoader")
-                mClassLoader.isAccessible = true
-//                mClassLoader.invo
-            }
-        } catch (e: Exception) {
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    override fun callActivityOnCreate(activity: Activity?, icicle: Bundle?, persistentState: PersistableBundle?) {
+        injectActivity(activity)
+        mBase.callActivityOnCreate(activity, icicle, persistentState)
+    }
 
+    override fun callActivityOnCreate(activity: Activity?, icicle: Bundle?) {
+        injectActivity(activity)
+        mBase.callActivityOnCreate(activity, icicle)
+    }
+
+    private fun injectActivity(activity: Activity?) {
+        if (isFromPlugin(activity?.intent)) {
+            val base = activity!!.baseContext
+            val resourceField = base.javaClass.getField("mResources")
+            resourceField.isAccessible = true
+            val original = resourceField.get(base) as Resources
+            resourceField.set(base, PluginResources(original))//ContextThemeWrapper#mResources
+
+            val activityClass = activity.javaClass
+            val baseField = activityClass.getField("mBase")//ContextWrapper#mBase
+            baseField.isAccessible = true
+            baseField.set(activity, activity.baseContext)
+            val appClass = activityClass.getField("mApplication")
+            appClass.isAccessible = true
+            appClass.set(activity, DynamicLoader.mContext)
         }
     }
 
@@ -177,12 +185,15 @@ internal class InstrumentationProxy(val mBase: Instrumentation) : Instrumentatio
     }
 
     private fun uninjectIntent(intent: Intent?) {
-        if (intent?.getBooleanExtra(EXTRA_IS_PLUGIN_ACTIVITY, false) == true) {
-            val pkg = intent.getStringExtra(EXTRA_PLUGIN_PKG).orEmpty()
-            val klazz = intent.getStringExtra(EXTRA_PLUGIN_PKG).orEmpty()
-            intent.component = ComponentName(pkg, klazz)
+        if (isFromPlugin(intent)) {
+            val pkg = intent?.getStringExtra(EXTRA_PLUGIN_PKG).orEmpty()
+            val klazz = intent?.getStringExtra(EXTRA_PLUGIN_PKG).orEmpty()
+            intent?.component = ComponentName(pkg, klazz)
         }
     }
+
+    private fun isFromPlugin(intent: Intent?): Boolean =
+        intent?.getBooleanExtra(EXTRA_IS_PLUGIN_ACTIVITY, false) == true
 
     private fun isActivityFromPlugin(activity: String?): Boolean {
         return activity?.startsWith("me.bytebeats.pluginify.demo") ?: false
