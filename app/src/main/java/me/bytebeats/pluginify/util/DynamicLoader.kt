@@ -9,11 +9,15 @@ import android.net.Uri
 import dalvik.system.DexClassLoader
 import kotlin.jvm.internal.Reflection
 
+@SuppressLint("StaticFieldLeak")
 object DynamicLoader {
     internal lateinit var dexClassLoader: DexClassLoader
     internal lateinit var instrumentation: Instrumentation
 
+    internal lateinit var mContext: Context
+
     fun loadApk(context: Context, pluginUri: Uri) {
+        mContext = context.applicationContext
         dexClassLoader = DexClassLoader(pluginUri.path, context.cacheDir.path, null, context.classLoader)
     }
 
@@ -26,7 +30,7 @@ object DynamicLoader {
 
         val field = clazz.getDeclaredField("mInstrumentation")
         field.isAccessible = true
-        val instrumentation = field.get(instance) as Instrumentation
+        instrumentation = field.get(instance) as Instrumentation
 
         if (instrumentation !is InstrumentationProxy) {
             val proxy = InstrumentationProxy(instrumentation)

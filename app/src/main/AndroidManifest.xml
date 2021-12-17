@@ -10,12 +10,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".ActivityResultAPIActivity"></activity>
+        <activity android:name=".ActivityResultAPIActivity" />
         <activity android:name=".OnActivityResultActivity" />
+        <activity android:name=".util.StandardStubActivity" />
+        <activity android:name=".util.SingleTopStubActivity" />
+        <activity android:name=".util.SingleTaskStubActivity" />
+        <activity android:name=".util.SingleInstanceStubActivity" />
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.NoActionBar"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
